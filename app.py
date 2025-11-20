@@ -15,7 +15,7 @@ from langchain_groq import ChatGroq
 
 # Load secrets from Streamlit secrets
 # Load secrets from Streamlit secrets and map them to your variable names
-sec_key = st.secrets.get("HUGGINGFACEHUB_API_TOKEN", "")
+sec_key = st.secrets.get("sec_key", "")
 GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", "")
 
 st.set_page_config(layout="wide")
