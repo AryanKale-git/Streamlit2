@@ -4,6 +4,7 @@ import bcrypt
 import pickle
 import time
 import os
+
 from langchain_core.prompts import PromptTemplate
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -11,24 +12,34 @@ from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.vectorstores import FAISS
 from langchain_classic.chains.qa_with_sources.retrieval import RetrievalQAWithSourcesChain
 from langchain_groq import ChatGroq
-import secret_key
 
-# Load secrets from secret_key.py
-HUGGINGFACEHUB_API_TOKEN = secret_key.sec_key
-GROQ_API_KEY = secret_key.GROQ_API_KEY
+# Load secrets from Streamlit secrets
+# Load secrets from Streamlit secrets and map them to your variable names
+sec_key = st.secrets.get("HUGGINGFACEHUB_API_TOKEN", "")
+GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", "")
 
 st.set_page_config(layout="wide")
 
+# Validate secrets
 if not HUGGINGFACEHUB_API_TOKEN or not GROQ_API_KEY:
-    st.error("API keys are not configured in secret_key.py.")
+    st.error(
+        "API keys are not configured.\n\n"
+        "Please set `GROQ_API_KEY` and `HUGGINGFACEHUB_API_TOKEN` in Streamlit secrets."
+    )
     st.stop()
+
+# Make HF token available to HuggingFaceEmbeddings via env var
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = HUGGINGFACEHUB_API_TOKEN
+# Optional: also expose Groq key via env if any integration needs it
+os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 
 # Initialize the HuggingFace model and ChatGroq for chatbot
 llm = ChatGroq(
     temperature=0.7,
     groq_api_key=GROQ_API_KEY,
-    model="llama-3.3-70b-versatile"
+    model="llama-3.3-70b-versatile",
 )
+
 qa_prompt_template = """
 You are a professional financial analyst. Please provide clear, well-structured answers.
 
@@ -49,17 +60,18 @@ Please provide a comprehensive, well-formatted answer:
 
 QA_PROMPT = PromptTemplate(
     template=qa_prompt_template,
-    input_variables=["summaries", "question"]
+    input_variables=["summaries", "question"],
 )
 
 chat_llm = ChatGroq(
     temperature=0.4,
     groq_api_key=GROQ_API_KEY,
-    model="llama-3.3-70b-versatile"
+    model="llama-3.3-70b-versatile",
 )
 
 # Streamlit UI Setup
 st.title("Equity Research Tool & Chatbot 🔍🤖")
+
 
 # Login and Signup Logic
 def login():
@@ -78,6 +90,7 @@ def login():
         else:
             st.error("Invalid username, email, or password.")
 
+
 def signup():
     username = st.text_input("Create Username", "")
     email = st.text_input("Enter your Email (@gmail.com only)", "")
@@ -92,6 +105,7 @@ def signup():
         else:
             st.error("Username or email already exists.")
 
+
 def forgot_password():
     email = st.text_input("Enter your Email to Reset Password", "")
     new_password = st.text_input("Enter New Password", type="password")
@@ -102,6 +116,7 @@ def forgot_password():
             st.success("Password reset successfully! Please log in.")
         else:
             st.error("Email not found!")
+
 
 # Check if user is logged in
 if "logged_in" not in st.session_state or not st.session_state.logged_in:
@@ -134,7 +149,7 @@ else:
 
         text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
             chunk_size=1000,
-            chunk_overlap=0
+            chunk_overlap=0,
         )
         main_placeholder.caption("Text splitting started...")
         docs = text_splitter.split_documents(data)
@@ -144,19 +159,19 @@ else:
         main_placeholder.caption("Embedding vector started...")
         time.sleep(2)
 
-        with open(file_path, 'wb') as f:
+        with open(file_path, "wb") as f:
             pickle.dump(vectorstore_index, f)
 
     query = main_placeholder.text_input("Ask a question about the articles:")
     if query:
         if os.path.exists(file_path):
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 vectorstore = pickle.load(f)
                 chain = RetrievalQAWithSourcesChain.from_chain_type(
                     llm=llm,
                     chain_type="stuff",
                     retriever=vectorstore.as_retriever(),
-                    chain_type_kwargs={"prompt": QA_PROMPT}
+                    chain_type_kwargs={"prompt": QA_PROMPT},
                 )
                 result = chain.invoke({"question": query})
 
@@ -193,4 +208,6 @@ else:
         with st.chat_message("assistant"):
             response = chat_llm.invoke(prompt)
             st.markdown(response.content)
-            st.session_state.messages.append({"role": "assistant", "content": response.content})
+            st.session_state.messages.append(
+                {"role": "assistant", "content": response.content}
+            )
