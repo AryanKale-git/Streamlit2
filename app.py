@@ -11,23 +11,23 @@ from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.vectorstores import FAISS
 from langchain.chains import RetrievalQAWithSourcesChain
 from langchain_groq import ChatGroq
-import secret_key
-
-# Load secrets from secret_key.py
-HUGGINGFACEHUB_API_TOKEN = secret_key.sec_key
-GROQ_API_KEY = secret_key.GROQ_API_KEY
 
 st.set_page_config(layout="wide")
 
-if not HUGGINGFACEHUB_API_TOKEN or not GROQ_API_KEY:
-    st.error("API keys are not configured in secret_key.py.")
+# Securely access API keys using Streamlit secrets
+try:
+    HUGGINGFACEHUB_API_TOKEN = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
+    GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
+    os.environ["HUGGINGFACEHUB_API_TOKEN"] = HUGGINGFACEHUB_API_TOKEN
+except KeyError:
+    st.error("API keys (HUGGINGFACEHUB_API_TOKEN, GROQ_API_KEY) are not configured. Please add them to your Streamlit secrets.")
     st.stop()
 
 # Initialize the HuggingFace model and ChatGroq for chatbot
 llm = ChatGroq(
     temperature=0.7,
     groq_api_key=GROQ_API_KEY,
-    model="llama-3.3-70b-versatile"
+    model="llama3-70b-8192"
 )
 qa_prompt_template = """
 You are a professional financial analyst. Please provide clear, well-structured answers.
@@ -55,7 +55,7 @@ QA_PROMPT = PromptTemplate(
 chat_llm = ChatGroq(
     temperature=0.4,
     groq_api_key=GROQ_API_KEY,
-    model="llama-3.3-70b-versatile"
+    model="llama3-70b-8192"
 )
 
 # Streamlit UI Setup
