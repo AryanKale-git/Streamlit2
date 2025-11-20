@@ -21,7 +21,7 @@ GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", "")
 st.set_page_config(layout="wide")
 
 # Validate secrets
-if not HUGGINGFACEHUB_API_TOKEN or not GROQ_API_KEY:
+if not sec_key or not GROQ_API_KEY:
     st.error(
         "API keys are not configured.\n\n"
         "Please set `GROQ_API_KEY` and `HUGGINGFACEHUB_API_TOKEN` in Streamlit secrets."
@@ -29,7 +29,7 @@ if not HUGGINGFACEHUB_API_TOKEN or not GROQ_API_KEY:
     st.stop()
 
 # Make HF token available to HuggingFaceEmbeddings via env var
-os.environ["HUGGINGFACEHUB_API_TOKEN"] = HUGGINGFACEHUB_API_TOKEN
+os.environ["sec_key"] = sec_key
 # Optional: also expose Groq key via env if any integration needs it
 os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 
