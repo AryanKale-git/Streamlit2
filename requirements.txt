@@ -17,7 +17,7 @@ torch
 torchvision
 torchaudio
 streamlit
-langchain-chains
+
 langchain
 langchain-core
 langchain-community
